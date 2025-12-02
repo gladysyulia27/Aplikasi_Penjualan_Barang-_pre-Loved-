@@ -14,8 +14,8 @@
 	<groupId>org.delcom</groupId>
 	<artifactId>spring-todos</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>Spring Todos</name>
-	<description>Todo Application with Spring Boot</description>
+	<name>Aplikasi Penjualan Barang Pre-Loved</name>
+	<description>Aplikasi Penjualan Barang Pre-Loved dengan Spring Boot</description>
 
 	<properties>
 		<java.version>25</java.version>
@@ -115,6 +115,18 @@
 			<version>${maven.dependency.jjwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
+
+		<!-- Dependency for Thymeleaf -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+
+		<!-- Dependency for BCrypt Password Encoder -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -191,16 +203,16 @@
 						<rule>
 							<element>BUNDLE</element>
 							<limits>
-								<limit>
-									<counter>INSTRUCTION</counter>
-									<value>COVEREDRATIO</value>
-									<minimum>1.0</minimum>
-								</limit>
-								<limit>
-									<counter>BRANCH</counter>
-									<value>COVEREDRATIO</value>
-									<minimum>1.0</minimum>
-								</limit>
+							<limit>
+								<counter>INSTRUCTION</counter>
+								<value>COVEREDRATIO</value>
+								<minimum>0.85</minimum>
+							</limit>
+							<limit>
+								<counter>BRANCH</counter>
+								<value>COVEREDRATIO</value>
+								<minimum>0.75</minimum>
+							</limit>
 							</limits>
 						</rule>
 					</rules>

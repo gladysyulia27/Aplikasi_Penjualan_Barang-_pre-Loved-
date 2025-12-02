@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::head}, ~{::content}, ~{::scripts})}">
+<head th:fragment="head">
+    <title>Statistik - Aplikasi Penjualan Barang Pre-Loved</title>
+</head>
+<body>
+    <th:block th:fragment="content">
+        <h2 class="mb-4"><i class="bi bi-bar-chart"></i> Statistik Produk</h2>
+        
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">Produk Berdasarkan Kategori</h5>
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">Produk Berdasarkan Kondisi</h5>
+                        <canvas id="conditionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </th:block>
+    <th:block th:fragment="scripts">
+        <script th:inline="javascript">
+            // Tunggu sampai halaman dan Chart.js siap
+            (function() {
+                function initCharts() {
+                    if (typeof Chart === 'undefined') {
+                        setTimeout(initCharts, 100);
+                        return;
+                    }
+
+                    const categoryData = /*[[${categoryStats}]]*/ [];
+                    const conditionData = /*[[${conditionStats}]]*/ [];
+
+                    // Category Chart
+                    const categoryCtx = document.getElementById('categoryChart');
+                    if (categoryCtx && categoryData && categoryData.length > 0) {
+                        const categoryLabels = categoryData.map(item => item[0]);
+                        const categoryValues = categoryData.map(item => Number(item[1]));
+                        
+                        new Chart(categoryCtx, {
+                            type: 'bar',
+                            data: {
+                                labels: categoryLabels,
+                                datasets: [{
+                                    label: 'Jumlah Produk',
+                                    data: categoryValues,
+                                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                    borderColor: 'rgba(54, 162, 235, 1)',
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Condition Chart
+                    const conditionCtx = document.getElementById('conditionChart');
+                    if (conditionCtx && conditionData && conditionData.length > 0) {
+                        const conditionLabels = conditionData.map(item => item[0]);
+                        const conditionValues = conditionData.map(item => Number(item[1]));
+                        
+                        new Chart(conditionCtx, {
+                            type: 'pie',
+                            data: {
+                                labels: conditionLabels,
+                                datasets: [{
+                                    label: 'Jumlah Produk',
+                                    data: conditionValues,
+                                    backgroundColor: [
+                                        'rgba(255, 99, 132, 0.6)',
+                                        'rgba(54, 162, 235, 0.6)',
+                                        'rgba(255, 206, 86, 0.6)',
+                                        'rgba(75, 192, 192, 0.6)'
+                                    ],
+                                    borderColor: [
+                                        'rgba(255, 99, 132, 1)',
+                                        'rgba(54, 162, 235, 1)',
+                                        'rgba(255, 206, 86, 1)',
+                                        'rgba(75, 192, 192, 1)'
+                                    ],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                responsive: true
+                            }
+                        });
+                    }
+                }
+
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initCharts);
+                } else {
+                    initCharts();
+                }
+            })();
+        </script>
+    </th:block>
+</body>
+</html>

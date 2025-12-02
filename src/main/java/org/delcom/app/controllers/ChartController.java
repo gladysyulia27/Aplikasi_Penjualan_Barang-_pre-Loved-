@@ -8,29 +8,37 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.List;
 import java.util.Optional;
 
 @Controller
-public class HomeController {
+@RequestMapping("/charts")
+public class ChartController {
     private final ProductService productService;
     private final AuthService authService;
 
-    public HomeController(ProductService productService, AuthService authService) {
+    public ChartController(ProductService productService, AuthService authService) {
         this.productService = productService;
         this.authService = authService;
     }
 
-    @GetMapping("/")
-    public String home(@CookieValue(value = "token", required = false) String token,
-                      Model model) {
-        model.addAttribute("products", productService.getAllProducts());
-        
+    @GetMapping
+    public String showCharts(@CookieValue(value = "token", required = false) String token,
+                            Model model) {
+        List<Object[]> categoryStats = productService.getCategoryStatistics();
+        List<Object[]> conditionStats = productService.getConditionStatistics();
+
+        model.addAttribute("categoryStats", categoryStats);
+        model.addAttribute("conditionStats", conditionStats);
+
         if (token != null) {
             Optional<User> userOpt = authService.getUserByToken(token);
             userOpt.ifPresent(user -> model.addAttribute("currentUser", user));
         }
-        
-        return "index";
+
+        return "charts/index";
     }
 }
+

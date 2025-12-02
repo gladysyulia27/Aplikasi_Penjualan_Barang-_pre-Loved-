@@ -1,6 +1,11 @@
-spring.application.name=todo
+spring.application.name=preloved-shop
 
-spring.datasource.url=jdbc:postgresql://localhost:5432/db_pbo_app
+# File Upload Configuration
+spring.servlet.multipart.enabled=true
+spring.servlet.multipart.max-file-size=5MB
+spring.servlet.multipart.max-request-size=5MB
+
+spring.datasource.url=jdbc:postgresql://localhost:5432/db_preloved
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 spring.datasource.driver-class-name=org.postgresql.Driver
