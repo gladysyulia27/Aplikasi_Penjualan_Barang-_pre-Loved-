@@ -34,7 +34,7 @@
                         <div class="mt-auto">
                             <p class="fw-bold text-primary fs-4" th:text="'Rp ' + ${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')}">Rp 0</p>
                             <span class="badge bg-secondary" th:text="${product.category}">Kategori</span>
-                            <span class="badge bg-info ms-2" th:text="${product.condition}">Kondisi</span>
+                            <span class="badge bg-secondary" th:text="${product.condition}">Kondisi</span>
                             <a th:href="@{/products/{id}(id=${product.id})}" class="btn btn-primary btn-sm mt-2 w-100">
                                 Lihat Detail
                             </a>

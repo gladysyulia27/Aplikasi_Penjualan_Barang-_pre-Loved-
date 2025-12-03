@@ -1,5 +1,6 @@
 package org.delcom.app.services;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,21 +13,27 @@ import java.util.UUID;
 
 @Service
 public class FileStorageService {
-    private static final String UPLOAD_DIR = "uploads/images/";
+    private final Path uploadPath;
 
-    public FileStorageService() {
+    public FileStorageService(@Value("${app.upload.dir:./uploads/images}") String uploadDir) {
         try {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
+            // Gunakan path absolut untuk memastikan file persisten
+            Path basePath = Paths.get(uploadDir).toAbsolutePath().normalize();
+            this.uploadPath = basePath;
+            
+            // Buat direktori jika belum ada
+            if (!Files.exists(this.uploadPath)) {
+                Files.createDirectories(this.uploadPath);
             }
+            
+            System.out.println("Upload directory: " + this.uploadPath.toString());
         } catch (IOException e) {
-            throw new RuntimeException("Tidak dapat membuat direktori upload", e);
+            throw new RuntimeException("Tidak dapat membuat direktori upload: " + uploadDir, e);
         }
     }
 
     public String storeFile(MultipartFile file) {
-        if (file.isEmpty()) {
+        if (file == null || file.isEmpty()) {
             throw new RuntimeException("File kosong");
         }
 
@@ -37,11 +44,16 @@ public class FileStorageService {
                 extension = originalFilename.substring(originalFilename.lastIndexOf("."));
             }
             String filename = UUID.randomUUID().toString() + extension;
-            Path targetLocation = Paths.get(UPLOAD_DIR + filename);
+            Path targetLocation = this.uploadPath.resolve(filename);
+            
+            // Simpan file ke local storage
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
-            return "/" + UPLOAD_DIR + filename;
+            
+            // Kembalikan path relatif untuk disimpan di database
+            // Path ini akan diakses via /uploads/images/{filename}
+            return "/uploads/images/" + filename;
         } catch (IOException e) {
-            throw new RuntimeException("Gagal menyimpan file", e);
+            throw new RuntimeException("Gagal menyimpan file: " + e.getMessage(), e);
         }
     }
 
@@ -51,13 +63,16 @@ public class FileStorageService {
         }
 
         try {
-            Path filePath = Paths.get(fileUrl.startsWith("/") ? fileUrl.substring(1) : fileUrl);
+            // Extract filename dari URL (format: /uploads/images/{filename})
+            String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+            Path filePath = this.uploadPath.resolve(filename);
+            
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
             }
         } catch (IOException e) {
             // Log error but don't throw
-            System.err.println("Gagal menghapus file: " + fileUrl);
+            System.err.println("Gagal menghapus file: " + fileUrl + " - " + e.getMessage());
         }
     }
 }

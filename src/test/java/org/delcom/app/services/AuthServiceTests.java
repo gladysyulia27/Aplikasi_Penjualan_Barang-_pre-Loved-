@@ -18,15 +18,13 @@ import static org.mockito.Mockito.*;
 class AuthServiceTests {
     private UserRepository userRepository;
     private AuthTokenRepository authTokenRepository;
-    private JwtService jwtService;
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
         authTokenRepository = mock(AuthTokenRepository.class);
-        jwtService = mock(JwtService.class);
-        authService = new AuthService(userRepository, authTokenRepository, jwtService);
+        authService = new AuthService(userRepository, authTokenRepository);
     }
 
     @Test
@@ -113,7 +111,6 @@ class AuthServiceTests {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(authTokenRepository.findByUserId(userId)).thenReturn(Optional.empty());
-        when(jwtService.generateToken(userId)).thenReturn("test-token");
         when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(invocation -> {
             AuthToken token = invocation.getArgument(0);
             token.setId(UUID.randomUUID());
@@ -123,20 +120,21 @@ class AuthServiceTests {
         AuthToken result = authService.login(email, password);
 
         assertNotNull(result);
-        assertEquals("test-token", result.getToken());
+        assertNotNull(result.getToken());
+        assertFalse(result.getToken().isEmpty());
         verify(authTokenRepository, times(1)).save(any(AuthToken.class));
     }
 
     @Test
     @DisplayName("Get user by token valid berhasil")
     void getUserByToken_WithValidToken_ShouldReturnUser() {
-        String token = "valid-token";
         UUID userId = UUID.randomUUID();
         User user = new User();
         user.setId(userId);
+        
+        // Generate valid token
+        String token = org.delcom.app.utils.JwtUtil.generateToken(userId);
 
-        when(jwtService.validateToken(token)).thenReturn(true);
-        when(jwtService.getUserIdFromToken(token)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         Optional<User> result = authService.getUserByToken(token);
@@ -149,7 +147,6 @@ class AuthServiceTests {
     @DisplayName("Get user by token invalid mengembalikan empty")
     void getUserByToken_WithInvalidToken_ShouldReturnEmpty() {
         String token = "invalid-token";
-        when(jwtService.validateToken(token)).thenReturn(false);
 
         Optional<User> result = authService.getUserByToken(token);
 
@@ -201,7 +198,6 @@ class AuthServiceTests {
 
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(authTokenRepository.findByUserId(userId)).thenReturn(Optional.of(existingToken));
-        when(jwtService.generateToken(userId)).thenReturn("new-token");
         when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(invocation -> {
             AuthToken token = invocation.getArgument(0);
             token.setId(UUID.randomUUID());
@@ -218,11 +214,9 @@ class AuthServiceTests {
     @Test
     @DisplayName("Get user by token dengan user tidak ditemukan mengembalikan empty")
     void getUserByToken_WithUserNotFound_ShouldReturnEmpty() {
-        String token = "valid-token";
         UUID userId = UUID.randomUUID();
+        String token = org.delcom.app.utils.JwtUtil.generateToken(userId);
 
-        when(jwtService.validateToken(token)).thenReturn(true);
-        when(jwtService.getUserIdFromToken(token)).thenReturn(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
         Optional<User> result = authService.getUserByToken(token);

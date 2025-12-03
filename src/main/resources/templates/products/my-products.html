@@ -24,7 +24,7 @@
                         <div class="mt-auto">
                             <p class="fw-bold text-primary fs-4" th:text="'Rp ' + ${#numbers.formatDecimal(product.price, 0, 'COMMA', 0, 'POINT')}">Rp 0</p>
                             <span class="badge bg-secondary" th:text="${product.category}">Kategori</span>
-                            <span class="badge bg-info ms-2" th:text="${product.condition}">Kondisi</span>
+                            <span class="badge bg-secondary" th:text="${product.condition}">Kondisi</span>
                             <div class="btn-group mt-2 w-100" role="group">
                                 <a th:href="@{/products/{id}(id=${product.id})}" class="btn btn-sm btn-outline-primary">
                                     <i class="bi bi-eye"></i> Detail
@@ -32,8 +32,8 @@
                                 <a th:href="@{/products/{id}/edit(id=${product.id})}" class="btn btn-sm btn-outline-warning">
                                     <i class="bi bi-pencil"></i> Edit
                                 </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" 
-                                        onclick="deleteProduct('[[${product.id}]]')">
+                                <button type="button" class="btn btn-sm btn-outline-danger delete-product-btn" 
+                                        th:data-product-id="${product.id}">
                                     <i class="bi bi-trash"></i> Hapus
                                 </button>
                             </div>
@@ -49,22 +49,32 @@
     </th:block>
     <th:block th:fragment="scripts">
         <script>
-            function deleteProduct(id) {
-                if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
-                    fetch('/products/' + id + '/delete', {
-                        method: 'POST'
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.status === 'success') {
-                            alert('Produk berhasil dihapus');
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + result.message);
+            document.addEventListener('DOMContentLoaded', function() {
+                document.querySelectorAll('.delete-product-btn').forEach(function(button) {
+                    button.addEventListener('click', function() {
+                        const productId = this.getAttribute('data-product-id');
+                        if (confirm('Apakah Anda yakin ingin menghapus produk ini?')) {
+                            fetch('/products/' + productId + '/delete', {
+                                method: 'POST',
+                                credentials: 'include'
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.status === 'success') {
+                                    alert('Produk berhasil dihapus');
+                                    window.location.reload();
+                                } else {
+                                    alert('Error: ' + result.message);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('Terjadi kesalahan saat menghapus produk');
+                            });
                         }
                     });
-                }
-            }
+                });
+            });
         </script>
     </th:block>
 </body>

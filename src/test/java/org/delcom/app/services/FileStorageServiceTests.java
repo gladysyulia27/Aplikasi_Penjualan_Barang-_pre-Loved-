@@ -7,16 +7,20 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class FileStorageServiceTests {
     private FileStorageService fileStorageService;
+    private static final String TEST_UPLOAD_DIR = "./test-uploads/images";
 
     @BeforeEach
     void setUp() {
-        fileStorageService = new FileStorageService();
+        fileStorageService = new FileStorageService(TEST_UPLOAD_DIR);
     }
 
     @Test
@@ -107,9 +111,15 @@ class FileStorageServiceTests {
         when(file.getOriginalFilename()).thenReturn("test.jpg");
         when(file.getInputStream()).thenThrow(new IOException("IO Error"));
 
-        assertThrows(RuntimeException.class, () -> {
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             fileStorageService.storeFile(file);
         });
+        
+        // Message sekarang include error detail
+        assertTrue(exception.getMessage().startsWith("Gagal menyimpan file"), 
+                   "Message should start with 'Gagal menyimpan file', but was: " + exception.getMessage());
+        assertNotNull(exception.getCause());
+        assertTrue(exception.getCause() instanceof IOException);
     }
 
     @Test
@@ -123,8 +133,8 @@ class FileStorageServiceTests {
     @Test
     @DisplayName("Delete file dengan file yang benar-benar ada berhasil")
     void deleteFile_WithExistingFile_ShouldDeleteFile() throws IOException {
-        // Create a temporary file in uploads/images directory
-        java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads/images/");
+        // Create a temporary file in test upload directory
+        java.nio.file.Path uploadDir = java.nio.file.Paths.get(TEST_UPLOAD_DIR).toAbsolutePath().normalize();
         if (!java.nio.file.Files.exists(uploadDir)) {
             java.nio.file.Files.createDirectories(uploadDir);
         }
@@ -144,13 +154,21 @@ class FileStorageServiceTests {
 
     @Test
     @DisplayName("Delete file dengan IOException tidak throw exception")
-    void deleteFile_WithIOException_ShouldNotThrowException() {
-        // Test that IOException in deleteFile is caught and logged, not thrown
-        // We'll use a path that exists but might cause issues during deletion
-        assertDoesNotThrow(() -> {
-            // The method should catch IOException and not throw it
-            fileStorageService.deleteFile("/uploads/images/nonexistent-file-that-wont-cause-io-exception.jpg");
-        });
+    void deleteFile_WithIOException_ShouldNotThrowException() throws IOException {
+        // Use Mockito static mocking to simulate IOException during Files.delete()
+        try (var mockedFiles = mockStatic(Files.class)) {
+            Path testPath = Paths.get("uploads/images/test-file.jpg");
+            
+            // Mock Files.exists to return true
+            mockedFiles.when(() -> Files.exists(testPath)).thenReturn(true);
+            // Mock Files.delete to throw IOException
+            mockedFiles.when(() -> Files.delete(testPath)).thenThrow(new IOException("Cannot delete file"));
+            
+            // The method should catch IOException and not throw
+            assertDoesNotThrow(() -> {
+                fileStorageService.deleteFile("/uploads/images/test-file.jpg");
+            });
+        }
     }
 
     @Test
@@ -159,8 +177,84 @@ class FileStorageServiceTests {
         // Constructor is called in setUp, so we just verify the service was created
         assertNotNull(fileStorageService);
         // Verify directory exists (it should be created by constructor)
-        assertTrue(java.nio.file.Files.exists(java.nio.file.Paths.get("uploads/images/")) ||
-                   java.nio.file.Files.exists(java.nio.file.Paths.get("uploads/images")));
+        Path testDir = Paths.get(TEST_UPLOAD_DIR).toAbsolutePath().normalize();
+        assertTrue(java.nio.file.Files.exists(testDir));
+    }
+
+    @Test
+    @DisplayName("FileStorageService constructor membuat direktori ketika tidak ada")
+    void constructor_ShouldCreateDirectoryWhenNotExists() throws IOException {
+        // Use a unique test directory for this test
+        String uniqueTestDir = "./test-uploads-unique-" + System.currentTimeMillis() + "/images";
+        
+        // Delete directory if it exists to test the createDirectories path
+        Path uploadDir = Paths.get(uniqueTestDir).toAbsolutePath().normalize();
+        if (Files.exists(uploadDir)) {
+            // Delete all files in directory first
+            Files.walk(uploadDir)
+                .sorted((a, b) -> b.compareTo(a)) // Delete files before directories
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        // Ignore errors during cleanup
+                    }
+                });
+        }
+        
+        // Now create a new instance - this should call Files.createDirectories
+        FileStorageService newService = new FileStorageService(uniqueTestDir);
+        assertNotNull(newService);
+        
+        // Verify directory was created
+        assertTrue(Files.exists(uploadDir));
+        
+        // Cleanup
+        try {
+            Files.walk(uploadDir)
+                .sorted((a, b) -> b.compareTo(a))
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        // Ignore errors during cleanup
+                    }
+                });
+        } catch (IOException e) {
+            // Ignore cleanup errors
+        }
+    }
+
+    @Test
+    @DisplayName("FileStorageService constructor dengan IOException throw exception")
+    void constructor_WithIOException_ShouldThrowException() {
+        // Use Mockito static mocking to simulate IOException during Files.createDirectories()
+        try (var mockedFiles = mockStatic(Files.class);
+             var mockedPaths = mockStatic(Paths.class)) {
+            
+            Path uploadPath = mock(Path.class);
+            Path absolutePath = mock(Path.class);
+            
+            // Mock Paths.get to return our mocked Path
+            mockedPaths.when(() -> Paths.get(TEST_UPLOAD_DIR)).thenReturn(uploadPath);
+            // Mock toAbsolutePath and normalize
+            when(uploadPath.toAbsolutePath()).thenReturn(absolutePath);
+            when(absolutePath.normalize()).thenReturn(absolutePath);
+            
+            // Mock Files.exists to return false (directory doesn't exist)
+            mockedFiles.when(() -> Files.exists(absolutePath)).thenReturn(false);
+            // Mock Files.createDirectories to throw IOException
+            mockedFiles.when(() -> Files.createDirectories(absolutePath)).thenThrow(new IOException("Cannot create directory"));
+            
+            // Constructor should throw RuntimeException when IOException occurs
+            RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+                new FileStorageService(TEST_UPLOAD_DIR);
+            });
+            
+            assertTrue(exception.getMessage().contains("Tidak dapat membuat direktori upload"));
+            assertNotNull(exception.getCause());
+            assertTrue(exception.getCause() instanceof IOException);
+        }
     }
 }
 

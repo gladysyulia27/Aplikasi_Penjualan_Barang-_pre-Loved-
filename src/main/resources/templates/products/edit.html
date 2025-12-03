@@ -79,7 +79,8 @@
                 const formData = new FormData(this);
                 const response = await fetch('/products/' + productId + '/edit', {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include'
                 });
                 const result = await response.json();
                 const alertDiv = document.getElementById('alertMessage');

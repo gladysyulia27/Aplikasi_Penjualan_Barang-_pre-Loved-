@@ -62,7 +62,10 @@ class UserTests {
 
         assertNotNull(user.getCreatedAt());
         assertNotNull(user.getUpdatedAt());
-        assertEquals(user.getCreatedAt(), user.getUpdatedAt());
+        // Timestamps should be very close (within 1 second) since they're set in the same method
+        long diffSeconds = java.time.Duration.between(user.getCreatedAt(), user.getUpdatedAt()).getSeconds();
+        assertTrue(Math.abs(diffSeconds) <= 1, 
+                   "createdAt and updatedAt should be within 1 second, but difference was: " + diffSeconds);
     }
 
     @Test

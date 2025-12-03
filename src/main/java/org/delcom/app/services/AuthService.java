@@ -4,6 +4,7 @@ import org.delcom.app.entities.AuthToken;
 import org.delcom.app.entities.User;
 import org.delcom.app.repositories.AuthTokenRepository;
 import org.delcom.app.repositories.UserRepository;
+import org.delcom.app.utils.JwtUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,14 +16,11 @@ import java.util.UUID;
 public class AuthService {
     private final UserRepository userRepository;
     private final AuthTokenRepository authTokenRepository;
-    private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository, AuthTokenRepository authTokenRepository, 
-                      JwtService jwtService) {
+    public AuthService(UserRepository userRepository, AuthTokenRepository authTokenRepository) {
         this.userRepository = userRepository;
         this.authTokenRepository = authTokenRepository;
-        this.jwtService = jwtService;
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
@@ -53,17 +51,22 @@ public class AuthService {
         authTokenRepository.findByUserId(user.getId()).ifPresent(authTokenRepository::delete);
 
         // Create new token
-        String token = jwtService.generateToken(user.getId());
-        AuthToken authToken = new AuthToken(token, user.getId());
+        String token = JwtUtil.generateToken(user.getId());
+        AuthToken authToken = new AuthToken();
+        authToken.setToken(token);
+        authToken.setUserId(user.getId());
         return authTokenRepository.save(authToken);
     }
 
     public Optional<User> getUserByToken(String token) {
-        if (!jwtService.validateToken(token)) {
+        if (!JwtUtil.validateToken(token, false)) {
             return Optional.empty();
         }
 
-        UUID userId = jwtService.getUserIdFromToken(token);
+        UUID userId = JwtUtil.extractUserId(token);
+        if (userId == null) {
+            return Optional.empty();
+        }
         return userRepository.findById(userId);
     }
 

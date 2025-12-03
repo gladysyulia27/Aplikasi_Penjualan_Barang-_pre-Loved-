@@ -473,36 +473,37 @@ img {
     }
 }
 
-/* Product Detail Page - Blue Background with White Text */
+/* Product Detail Page - White Background with Dark Text */
 .detail-content {
-    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%) !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
     min-height: 100%;
 }
 
 .detail-content h2,
 .detail-content h3 {
-    color: #ffffff !important;
+    color: #212529 !important;
 }
 
 .detail-content .text-white-50 {
-    color: rgba(255, 255, 255, 0.8) !important;
+    color: #6c757d !important;
 }
 
 .detail-content .badge.bg-white {
-    background-color: #ffffff !important;
-    color: #0d6efd !important;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    border: 1px solid #0d6efd;
 }
 
 .detail-content .btn-light {
-    background-color: #ffffff !important;
-    color: #0d6efd !important;
-    border: 2px solid #ffffff;
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    border: 2px solid #0d6efd;
 }
 
 .detail-content .btn-light:hover {
-    background-color: #f8f9fa !important;
-    color: #0a58ca !important;
+    background-color: #0a58ca !important;
+    color: #ffffff !important;
     transform: translateY(-2px);
 }
 
