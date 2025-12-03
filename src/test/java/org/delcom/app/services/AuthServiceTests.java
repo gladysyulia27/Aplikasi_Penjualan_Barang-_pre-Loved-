@@ -177,5 +177,57 @@ class AuthServiceTests {
         assertTrue(result.isPresent());
         assertEquals(userId, result.get().getId());
     }
+
+    @Test
+    @DisplayName("Login dengan existing token menghapus token lama")
+    void login_WithExistingToken_ShouldDeleteOldToken() {
+        String email = "test@example.com";
+        String password = "password123";
+        UUID userId = UUID.randomUUID();
+        
+        org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder encoder = 
+            new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+        String encodedPassword = encoder.encode(password);
+        
+        User user = new User();
+        user.setId(userId);
+        user.setEmail(email);
+        user.setPassword(encodedPassword);
+
+        AuthToken existingToken = new AuthToken();
+        existingToken.setId(UUID.randomUUID());
+        existingToken.setToken("old-token");
+        existingToken.setUserId(userId);
+
+        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        when(authTokenRepository.findByUserId(userId)).thenReturn(Optional.of(existingToken));
+        when(jwtService.generateToken(userId)).thenReturn("new-token");
+        when(authTokenRepository.save(any(AuthToken.class))).thenAnswer(invocation -> {
+            AuthToken token = invocation.getArgument(0);
+            token.setId(UUID.randomUUID());
+            return token;
+        });
+
+        AuthToken result = authService.login(email, password);
+
+        assertNotNull(result);
+        verify(authTokenRepository, times(1)).delete(existingToken);
+        verify(authTokenRepository, times(1)).save(any(AuthToken.class));
+    }
+
+    @Test
+    @DisplayName("Get user by token dengan user tidak ditemukan mengembalikan empty")
+    void getUserByToken_WithUserNotFound_ShouldReturnEmpty() {
+        String token = "valid-token";
+        UUID userId = UUID.randomUUID();
+
+        when(jwtService.validateToken(token)).thenReturn(true);
+        when(jwtService.getUserIdFromToken(token)).thenReturn(userId);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        Optional<User> result = authService.getUserByToken(token);
+
+        assertFalse(result.isPresent());
+    }
 }
 

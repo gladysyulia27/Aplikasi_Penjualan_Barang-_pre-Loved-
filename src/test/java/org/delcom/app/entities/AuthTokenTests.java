@@ -43,5 +43,20 @@ class AuthTokenTests {
         assertEquals(userId, authToken.getUserId());
         assertEquals(now, authToken.getCreatedAt());
     }
+
+    @Test
+    @DisplayName("AuthToken PrePersist callback mengatur createdAt")
+    void authToken_PrePersist_ShouldSetCreatedAt() throws Exception {
+        AuthToken authToken = new AuthToken();
+        authToken.setToken("test-token");
+        authToken.setUserId(UUID.randomUUID());
+
+        // Call PrePersist callback using reflection
+        java.lang.reflect.Method onCreate = AuthToken.class.getDeclaredMethod("onCreate");
+        onCreate.setAccessible(true);
+        onCreate.invoke(authToken);
+
+        assertNotNull(authToken.getCreatedAt());
+    }
 }
 

@@ -171,6 +171,29 @@ class ProductServiceTests {
     }
 
     @Test
+    @DisplayName("Update product dengan image URL empty string tidak update image")
+    void updateProduct_WithEmptyImageUrl_ShouldNotUpdateImage() {
+        UUID productId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Product product = new Product();
+        product.setId(productId);
+        product.setUserId(userId);
+        product.setImageUrl("/old-image.jpg");
+
+        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+        when(productRepository.save(any(Product.class))).thenReturn(product);
+
+        Product result = productService.updateProduct(
+            productId, userId, "New Name", "New Desc",
+            new BigDecimal("200000"), "Elektronik", "Like New", ""
+        );
+
+        assertNotNull(result);
+        assertEquals("/old-image.jpg", product.getImageUrl()); // Image URL should not change
+        verify(productRepository, times(1)).save(any(Product.class));
+    }
+
+    @Test
     @DisplayName("Delete product dengan user ID berbeda throw exception")
     void deleteProduct_WithDifferentUserId_ShouldThrowException() {
         UUID productId = UUID.randomUUID();

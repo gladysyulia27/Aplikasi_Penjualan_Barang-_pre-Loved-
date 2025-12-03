@@ -66,4 +66,30 @@ class StartupInfoLoggerTests {
 
         assertTrue(output.contains("> LiveReload: DISABLED"));
     }
+
+    @Test
+    void testContextPathIsSlash() {
+        when(environment.getProperty("server.servlet.context-path", "/")).thenReturn("/");
+        when(environment.getProperty("spring.devtools.livereload.enabled", Boolean.class, false)).thenReturn(false);
+
+        logger.onApplicationEvent(event);
+
+        String output = outContent.toString();
+
+        assertTrue(output.contains("> URL: http://localhost:8080"));
+        assertTrue(output.contains("> LiveReload: DISABLED"));
+    }
+
+    @Test
+    void testContextPathIsNull() {
+        when(environment.getProperty("server.servlet.context-path", "/")).thenReturn(null);
+        when(environment.getProperty("spring.devtools.livereload.enabled", Boolean.class, false)).thenReturn(false);
+
+        logger.onApplicationEvent(event);
+
+        String output = outContent.toString();
+
+        assertTrue(output.contains("> URL: http://localhost:8080"));
+        assertTrue(output.contains("> LiveReload: DISABLED"));
+    }
 }

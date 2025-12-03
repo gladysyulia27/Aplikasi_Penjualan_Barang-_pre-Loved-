@@ -10,24 +10,30 @@
     <th:block th:replace="${head}"></th:block>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/">
                 <i class="bi bi-shop"></i> Pre-Loved Shop
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/">Beranda</a>
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-house-door"></i> Beranda
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/products">Semua Produk</a>
+                        <a class="nav-link" href="/products">
+                            <i class="bi bi-grid"></i> Semua Produk
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/charts">Statistik</a>
+                        <a class="nav-link" href="/charts">
+                            <i class="bi bi-bar-chart"></i> Statistik
+                        </a>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
@@ -43,20 +49,24 @@
                             </a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-person-circle"></i> <span th:text="${currentUser.name}">User</span>
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#" onclick="logout()">Logout</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
                             </ul>
                         </li>
                     </th:block>
                     <th:block th:if="${currentUser == null}">
                         <li class="nav-item">
-                            <a class="nav-link" href="/auth/login">Login</a>
+                            <a class="nav-link" href="/auth/login">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/auth/register">Daftar</a>
+                            <a class="nav-link" href="/auth/register">
+                                <i class="bi bi-person-plus"></i> Daftar
+                            </a>
                         </li>
                     </th:block>
                 </ul>
@@ -68,7 +78,7 @@
         <th:block th:replace="${content}"></th:block>
     </main>
 
-    <footer class="bg-light text-center py-3 mt-5">
+    <footer class="text-center py-4 mt-5">
         <div class="container">
             <p class="mb-0">&copy; 2025 Aplikasi Penjualan Barang Pre-Loved. Dibuat untuk Proyek PBO.</p>
         </div>

@@ -126,4 +126,67 @@ class RequestLoggingFilterTests {
         verify(chain, times(1)).doFilter(request, response);
     }
 
+    @Test
+    @DisplayName("Filter menggunakan stack trace fallback ketika tidak menemukan org.delcom")
+    void testFilterUsesStackTraceFallback() throws ServletException, IOException {
+        RequestLoggingFilter filter = new RequestLoggingFilter();
+        ReflectionTestUtils.setField(filter, "port", 8080);
+        ReflectionTestUtils.setField(filter, "livereload", false);
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        FilterChain chain = mock(FilterChain.class);
+
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/test");
+        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(response.getStatus()).thenReturn(200);
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(chain, times(1)).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("Filter menampilkan log untuk status 300")
+    void testLogFor300() throws ServletException, IOException {
+        RequestLoggingFilter filter = new RequestLoggingFilter();
+        ReflectionTestUtils.setField(filter, "port", 8080);
+        ReflectionTestUtils.setField(filter, "livereload", false);
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        FilterChain chain = mock(FilterChain.class);
+
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/redirect");
+        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(response.getStatus()).thenReturn(300);
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(chain, times(1)).doFilter(request, response);
+    }
+
+    @Test
+    @DisplayName("Filter menampilkan log untuk status 199")
+    void testLogFor199() throws ServletException, IOException {
+        RequestLoggingFilter filter = new RequestLoggingFilter();
+        ReflectionTestUtils.setField(filter, "port", 8080);
+        ReflectionTestUtils.setField(filter, "livereload", false);
+
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        HttpServletResponse response = mock(HttpServletResponse.class);
+        FilterChain chain = mock(FilterChain.class);
+
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/test");
+        when(request.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(response.getStatus()).thenReturn(199);
+
+        filter.doFilterInternal(request, response, chain);
+
+        verify(chain, times(1)).doFilter(request, response);
+    }
+
 }

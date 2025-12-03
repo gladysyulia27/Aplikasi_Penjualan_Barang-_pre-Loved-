@@ -63,5 +63,48 @@ class ProductTests {
         assertEquals(now, product.getCreatedAt());
         assertEquals(now, product.getUpdatedAt());
     }
+
+    @Test
+    @DisplayName("Product PrePersist callback mengatur createdAt dan updatedAt")
+    void product_PrePersist_ShouldSetTimestamps() throws Exception {
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Description");
+        product.setPrice(new BigDecimal("100000"));
+        product.setCategory("Category");
+        product.setCondition("New");
+
+        // Call PrePersist callback using reflection
+        java.lang.reflect.Method onCreate = Product.class.getDeclaredMethod("onCreate");
+        onCreate.setAccessible(true);
+        onCreate.invoke(product);
+
+        assertNotNull(product.getCreatedAt());
+        assertNotNull(product.getUpdatedAt());
+        assertEquals(product.getCreatedAt(), product.getUpdatedAt());
+    }
+
+    @Test
+    @DisplayName("Product PreUpdate callback mengatur updatedAt")
+    void product_PreUpdate_ShouldSetUpdatedAt() throws Exception {
+        Product product = new Product();
+        product.setName("Test Product");
+        product.setDescription("Description");
+        product.setPrice(new BigDecimal("100000"));
+        product.setCategory("Category");
+        product.setCondition("New");
+        LocalDateTime oldTime = LocalDateTime.now().minusDays(1);
+        product.setCreatedAt(oldTime);
+        product.setUpdatedAt(oldTime);
+
+        // Call PreUpdate callback using reflection
+        java.lang.reflect.Method onUpdate = Product.class.getDeclaredMethod("onUpdate");
+        onUpdate.setAccessible(true);
+        onUpdate.invoke(product);
+
+        assertNotNull(product.getUpdatedAt());
+        assertTrue(product.getUpdatedAt().isAfter(oldTime));
+        assertEquals(oldTime, product.getCreatedAt()); // createdAt should not change
+    }
 }
 

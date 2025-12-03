@@ -67,5 +67,26 @@ class ChartControllerTests {
         assertEquals("charts/index", result);
         verify(model, times(1)).addAttribute("currentUser", user);
     }
+
+    @Test
+    @DisplayName("Show charts dengan token invalid tidak menambahkan user")
+    void showCharts_WithInvalidToken_ShouldNotAddUser() {
+        Model model = mock(Model.class);
+        String token = "invalid-token";
+
+        List<Object[]> categoryStats = new ArrayList<>();
+        categoryStats.add(new Object[]{"Pakaian", 5L});
+        List<Object[]> conditionStats = new ArrayList<>();
+        conditionStats.add(new Object[]{"New", 2L});
+
+        when(productService.getCategoryStatistics()).thenReturn(categoryStats);
+        when(productService.getConditionStatistics()).thenReturn(conditionStats);
+        when(authService.getUserByToken(token)).thenReturn(Optional.empty());
+
+        String result = chartController.showCharts(token, model);
+
+        assertEquals("charts/index", result);
+        verify(model, never()).addAttribute(eq("currentUser"), any());
+    }
 }
 

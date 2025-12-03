@@ -264,6 +264,23 @@ class ProductControllerTests {
     }
 
     @Test
+    @DisplayName("Show add form dengan token valid mengembalikan view")
+    void showAddForm_WithValidToken_ShouldReturnView() {
+        Model model = mock(Model.class);
+        UUID userId = UUID.randomUUID();
+        String token = "valid-token";
+        User user = new User();
+        user.setId(userId);
+
+        when(authService.getUserByToken(token)).thenReturn(Optional.of(user));
+
+        String result = productController.showAddForm(token, model);
+
+        assertEquals("products/add", result);
+        verify(model, times(1)).addAttribute("currentUser", user);
+    }
+
+    @Test
     @DisplayName("Show add form dengan token invalid redirect ke login")
     void showAddForm_WithInvalidToken_ShouldRedirectToLogin() {
         Model model = mock(Model.class);
@@ -405,6 +422,66 @@ class ProductControllerTests {
 
         assertEquals("success", result.getStatus());
         verify(fileStorageService, times(1)).deleteFile("/uploads/old.jpg");
+        verify(fileStorageService, times(1)).storeFile(image);
+    }
+
+    @Test
+    @DisplayName("Update product dengan image tapi product imageUrl null")
+    void updateProduct_WithImageButNullImageUrl_ShouldReturnSuccess() {
+        UUID productId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        String token = "valid-token";
+        User user = new User();
+        user.setId(userId);
+        Product oldProduct = new Product();
+        oldProduct.setId(productId);
+        oldProduct.setUserId(userId);
+        oldProduct.setImageUrl(null);
+        Product updatedProduct = new Product();
+        updatedProduct.setId(productId);
+        updatedProduct.setUserId(userId);
+        MultipartFile image = mock(MultipartFile.class);
+
+        when(authService.getUserByToken(token)).thenReturn(Optional.of(user));
+        when(productService.getProductById(productId)).thenReturn(Optional.of(oldProduct));
+        when(image.isEmpty()).thenReturn(false);
+        when(fileStorageService.storeFile(image)).thenReturn("/uploads/new.jpg");
+        when(productService.updateProduct(any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(updatedProduct);
+
+        ApiResponse<Product> result = productController.updateProduct(productId, token,
+            "Name", "Desc", new BigDecimal("100000"), "Category", "New", image);
+
+        assertEquals("success", result.getStatus());
+        verify(fileStorageService, never()).deleteFile(anyString());
+        verify(fileStorageService, times(1)).storeFile(image);
+    }
+
+    @Test
+    @DisplayName("Update product dengan image tapi old product tidak ditemukan")
+    void updateProduct_WithImageButOldProductNotFound_ShouldReturnSuccess() {
+        UUID productId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        String token = "valid-token";
+        User user = new User();
+        user.setId(userId);
+        Product updatedProduct = new Product();
+        updatedProduct.setId(productId);
+        updatedProduct.setUserId(userId);
+        MultipartFile image = mock(MultipartFile.class);
+
+        when(authService.getUserByToken(token)).thenReturn(Optional.of(user));
+        when(productService.getProductById(productId)).thenReturn(Optional.empty());
+        when(image.isEmpty()).thenReturn(false);
+        when(fileStorageService.storeFile(image)).thenReturn("/uploads/new.jpg");
+        when(productService.updateProduct(any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(updatedProduct);
+
+        ApiResponse<Product> result = productController.updateProduct(productId, token,
+            "Name", "Desc", new BigDecimal("100000"), "Category", "New", image);
+
+        assertEquals("success", result.getStatus());
+        verify(fileStorageService, never()).deleteFile(anyString());
         verify(fileStorageService, times(1)).storeFile(image);
     }
 

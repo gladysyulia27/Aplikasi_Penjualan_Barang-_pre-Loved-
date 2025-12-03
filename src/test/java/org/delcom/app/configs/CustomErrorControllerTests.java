@@ -74,4 +74,64 @@ class CustomErrorControllerTests {
                 assertEquals("Not Found", result.getBody().get("error"));
                 assertEquals("/error404", result.getBody().get("path"));
         }
+
+        @Test
+        @DisplayName("Mengembalikan response error dengan status 500 eksplisit")
+        void testHandleErrorReturns500Explicit() throws Exception {
+                Map<String, Object> errorMap = Map.of(
+                                "status", 500,
+                                "error", "Internal Server Error",
+                                "path", "/error500");
+
+                ErrorAttributes errorAttributes = Mockito.mock(ErrorAttributes.class);
+
+                Mockito.when(
+                                errorAttributes.getErrorAttributes(
+                                                any(ServletWebRequest.class),
+                                                any(ErrorAttributeOptions.class)))
+                                .thenReturn(errorMap);
+
+                CustomErrorController controller = new CustomErrorController(errorAttributes);
+
+                HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+                HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
+                ServletWebRequest webRequest = new ServletWebRequest(request, response);
+
+                ResponseEntity<Map<String, Object>> result = controller.handleError(webRequest);
+
+                assertEquals(500, result.getStatusCode().value());
+                assertEquals("error", result.getBody().get("status"));
+                assertEquals("Internal Server Error", result.getBody().get("error"));
+                assertEquals("/error500", result.getBody().get("path"));
+        }
+
+        @Test
+        @DisplayName("Mengembalikan response error dengan status 400")
+        void testHandleErrorReturns400() throws Exception {
+                Map<String, Object> errorMap = Map.of(
+                                "status", 400,
+                                "error", "Bad Request",
+                                "path", "/error400");
+
+                ErrorAttributes errorAttributes = Mockito.mock(ErrorAttributes.class);
+
+                Mockito.when(
+                                errorAttributes.getErrorAttributes(
+                                                any(ServletWebRequest.class),
+                                                any(ErrorAttributeOptions.class)))
+                                .thenReturn(errorMap);
+
+                CustomErrorController controller = new CustomErrorController(errorAttributes);
+
+                HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+                HttpServletResponse response = Mockito.mock(HttpServletResponse.class);
+                ServletWebRequest webRequest = new ServletWebRequest(request, response);
+
+                ResponseEntity<Map<String, Object>> result = controller.handleError(webRequest);
+
+                assertEquals(400, result.getStatusCode().value());
+                assertEquals("fail", result.getBody().get("status"));
+                assertEquals("Bad Request", result.getBody().get("error"));
+                assertEquals("/error400", result.getBody().get("path"));
+        }
 }

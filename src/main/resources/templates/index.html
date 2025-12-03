@@ -5,22 +5,22 @@
 </head>
 <body>
     <th:block th:fragment="content">
-        <div class="hero-section bg-primary text-white p-5 rounded mb-4">
+        <div class="hero-section text-white p-5 rounded mb-4">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="display-4 fw-bold">Selamat Datang di Pre-Loved Shop</h1>
-                    <p class="lead">Temukan barang pre-loved berkualitas dengan harga terjangkau. Jual dan beli dengan mudah!</p>
-                    <a th:href="@{/products}" class="btn btn-light btn-lg mt-3">
+                    <h1 class="display-4 fw-bold mb-3">Selamat Datang di Pre-Loved Shop</h1>
+                    <p class="lead mb-4">Temukan barang pre-loved berkualitas dengan harga terjangkau. Jual dan beli dengan mudah!</p>
+                    <a th:href="@{/products}" class="btn btn-light btn-lg">
                         <i class="bi bi-search"></i> Jelajahi Produk
                     </a>
                 </div>
                 <div class="col-md-4 text-center">
-                    <i class="bi bi-recycle" style="font-size: 8rem;"></i>
+                    <i class="bi bi-recycle" style="font-size: 8rem; opacity: 0.9;"></i>
                 </div>
             </div>
         </div>
 
-        <h2 class="mb-4">Produk Terbaru</h2>
+        <h2 class="mb-4 text-primary">Produk Terbaru</h2>
         <div class="row" th:if="${products != null and !products.isEmpty()}">
             <div class="col-md-4 mb-4" th:each="product : ${products}">
                 <div class="card h-100 shadow-sm">

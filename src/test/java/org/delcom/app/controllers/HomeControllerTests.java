@@ -46,8 +46,10 @@ class HomeControllerTests {
         HomeController controller = new HomeController(productService, authService);
         
         List<Product> products = new ArrayList<>();
+        org.delcom.app.entities.User user = new org.delcom.app.entities.User();
+        user.setId(java.util.UUID.randomUUID());
         when(productService.getAllProducts()).thenReturn(products);
-        when(authService.getUserByToken("valid-token")).thenReturn(Optional.empty());
+        when(authService.getUserByToken("valid-token")).thenReturn(Optional.of(user));
 
         // Act
         String result = controller.home("valid-token", model);
@@ -56,5 +58,29 @@ class HomeControllerTests {
         assertEquals("index", result);
         verify(productService, times(1)).getAllProducts();
         verify(authService, times(1)).getUserByToken("valid-token");
+        verify(model, times(1)).addAttribute("currentUser", user);
+    }
+
+    @Test
+    @DisplayName("Mengembalikan view name 'index' dengan token invalid tidak menambahkan user")
+    void home_WithInvalidToken_ShouldNotAddUser() {
+        // Arrange
+        ProductService productService = mock(ProductService.class);
+        AuthService authService = mock(AuthService.class);
+        Model model = mock(Model.class);
+        HomeController controller = new HomeController(productService, authService);
+        
+        List<Product> products = new ArrayList<>();
+        when(productService.getAllProducts()).thenReturn(products);
+        when(authService.getUserByToken("invalid-token")).thenReturn(Optional.empty());
+
+        // Act
+        String result = controller.home("invalid-token", model);
+
+        // Assert
+        assertEquals("index", result);
+        verify(productService, times(1)).getAllProducts();
+        verify(authService, times(1)).getUserByToken("invalid-token");
+        verify(model, never()).addAttribute(eq("currentUser"), any());
     }
 }

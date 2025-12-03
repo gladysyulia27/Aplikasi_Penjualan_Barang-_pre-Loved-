@@ -46,5 +46,44 @@ class UserTests {
         assertEquals(now, user.getCreatedAt());
         assertEquals(now, user.getUpdatedAt());
     }
+
+    @Test
+    @DisplayName("User PrePersist callback mengatur createdAt dan updatedAt")
+    void user_PrePersist_ShouldSetTimestamps() throws Exception {
+        User user = new User();
+        user.setName("Test");
+        user.setEmail("test@example.com");
+        user.setPassword("password");
+
+        // Call PrePersist callback using reflection
+        java.lang.reflect.Method onCreate = User.class.getDeclaredMethod("onCreate");
+        onCreate.setAccessible(true);
+        onCreate.invoke(user);
+
+        assertNotNull(user.getCreatedAt());
+        assertNotNull(user.getUpdatedAt());
+        assertEquals(user.getCreatedAt(), user.getUpdatedAt());
+    }
+
+    @Test
+    @DisplayName("User PreUpdate callback mengatur updatedAt")
+    void user_PreUpdate_ShouldSetUpdatedAt() throws Exception {
+        User user = new User();
+        user.setName("Test");
+        user.setEmail("test@example.com");
+        user.setPassword("password");
+        LocalDateTime oldTime = LocalDateTime.now().minusDays(1);
+        user.setCreatedAt(oldTime);
+        user.setUpdatedAt(oldTime);
+
+        // Call PreUpdate callback using reflection
+        java.lang.reflect.Method onUpdate = User.class.getDeclaredMethod("onUpdate");
+        onUpdate.setAccessible(true);
+        onUpdate.invoke(user);
+
+        assertNotNull(user.getUpdatedAt());
+        assertTrue(user.getUpdatedAt().isAfter(oldTime));
+        assertEquals(oldTime, user.getCreatedAt()); // createdAt should not change
+    }
 }
 
