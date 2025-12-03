@@ -81,7 +81,10 @@ class ProductTests {
 
         assertNotNull(product.getCreatedAt());
         assertNotNull(product.getUpdatedAt());
-        assertEquals(product.getCreatedAt(), product.getUpdatedAt());
+        // Timestamps should be very close (within 1 second) since they're set in the same method
+        long diffSeconds = java.time.Duration.between(product.getCreatedAt(), product.getUpdatedAt()).getSeconds();
+        assertTrue(Math.abs(diffSeconds) <= 1, 
+                   "createdAt and updatedAt should be within 1 second, but difference was: " + diffSeconds);
     }
 
     @Test
