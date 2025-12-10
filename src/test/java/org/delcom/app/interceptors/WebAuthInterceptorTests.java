@@ -180,6 +180,36 @@ class WebAuthInterceptorTests {
     }
 
     @Test
+    @DisplayName("WebAuthInterceptor preHandle dengan root path tanpa token redirect ke login tanpa redirect param")
+    void preHandle_WithRootPathWithoutToken_ShouldRedirectToLoginWithoutRedirectParam() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        // No cookies set (defaults to null)
+
+        boolean result = webAuthInterceptor.preHandle(request, response, null);
+
+        assertFalse(result);
+        assertEquals("/auth/login", response.getRedirectedUrl());
+        verify(authService, never()).getUserByToken(any());
+    }
+
+    @Test
+    @DisplayName("WebAuthInterceptor preHandle dengan empty request URI tanpa token redirect ke login tanpa redirect param")
+    void preHandle_WithEmptyRequestUriWithoutToken_ShouldRedirectToLoginWithoutRedirectParam() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        // No cookies set (defaults to null)
+
+        boolean result = webAuthInterceptor.preHandle(request, response, null);
+
+        assertFalse(result);
+        assertEquals("/auth/login", response.getRedirectedUrl());
+        verify(authService, never()).getUserByToken(any());
+    }
+
+    @Test
     @DisplayName("WebAuthInterceptor preHandle dengan cookies tapi tanpa token cookie mengembalikan false dan redirect")
     void preHandle_WithCookiesButNoTokenCookie_ShouldReturnFalseAndRedirect() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();

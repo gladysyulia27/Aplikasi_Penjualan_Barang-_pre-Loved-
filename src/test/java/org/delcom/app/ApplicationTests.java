@@ -7,7 +7,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-class ApplicationTest {
+class ApplicationTests {
 
 	@Test
 	void mainMethod_ShouldRunSpringApplication() throws Exception {

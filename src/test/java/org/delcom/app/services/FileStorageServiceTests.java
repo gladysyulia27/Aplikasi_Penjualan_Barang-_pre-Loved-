@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FileStorageServiceTests {
@@ -36,6 +37,14 @@ class FileStorageServiceTests {
         assertNotNull(result);
         assertTrue(result.startsWith("/uploads/images/"));
         assertTrue(result.endsWith(".jpg"));
+    }
+
+    @Test
+    @DisplayName("Store file null throw exception")
+    void storeFile_WithNullFile_ShouldThrowException() {
+        assertThrows(RuntimeException.class, () -> {
+            fileStorageService.storeFile(null);
+        });
     }
 
     @Test
@@ -109,17 +118,24 @@ class FileStorageServiceTests {
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(false);
         when(file.getOriginalFilename()).thenReturn("test.jpg");
-        when(file.getInputStream()).thenThrow(new IOException("IO Error"));
+        when(file.getInputStream()).thenReturn(new ByteArrayInputStream("test content".getBytes()));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            fileStorageService.storeFile(file);
-        });
-        
-        // Message sekarang include error detail
-        assertTrue(exception.getMessage().startsWith("Gagal menyimpan file"), 
-                   "Message should start with 'Gagal menyimpan file', but was: " + exception.getMessage());
-        assertNotNull(exception.getCause());
-        assertTrue(exception.getCause() instanceof IOException);
+        // Use Mockito static mocking to simulate IOException during Files.copy()
+        try (var mockedFiles = mockStatic(Files.class)) {
+            // Mock Files.copy to throw IOException
+            mockedFiles.when(() -> Files.copy(any(java.io.InputStream.class), any(Path.class), any(java.nio.file.CopyOption.class)))
+                .thenThrow(new IOException("Cannot copy file"));
+
+            RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+                fileStorageService.storeFile(file);
+            });
+            
+            // Message sekarang include error detail
+            assertTrue(exception.getMessage().startsWith("Gagal menyimpan file"), 
+                       "Message should start with 'Gagal menyimpan file', but was: " + exception.getMessage());
+            assertNotNull(exception.getCause());
+            assertTrue(exception.getCause() instanceof IOException);
+        }
     }
 
     @Test
@@ -157,17 +173,33 @@ class FileStorageServiceTests {
     void deleteFile_WithIOException_ShouldNotThrowException() throws IOException {
         // Use Mockito static mocking to simulate IOException during Files.delete()
         try (var mockedFiles = mockStatic(Files.class)) {
-            Path testPath = Paths.get("uploads/images/test-file.jpg");
+            // Get the actual upload path from the service using reflection
+            java.lang.reflect.Field uploadPathField = FileStorageService.class.getDeclaredField("uploadPath");
+            uploadPathField.setAccessible(true);
+            Path actualUploadPath = (Path) uploadPathField.get(fileStorageService);
+            Path testFilePath = actualUploadPath.resolve("test-file.jpg");
             
-            // Mock Files.exists to return true
-            mockedFiles.when(() -> Files.exists(testPath)).thenReturn(true);
+            // Mock Files.exists to return true (file exists)
+            mockedFiles.when(() -> Files.exists(any(Path.class))).thenAnswer(invocation -> {
+                Path path = invocation.getArgument(0);
+                return path.equals(testFilePath);
+            });
+            
             // Mock Files.delete to throw IOException
-            mockedFiles.when(() -> Files.delete(testPath)).thenThrow(new IOException("Cannot delete file"));
+            mockedFiles.when(() -> Files.delete(any(Path.class))).thenAnswer(invocation -> {
+                Path path = invocation.getArgument(0);
+                if (path.equals(testFilePath)) {
+                    throw new IOException("Cannot delete file");
+                }
+                return null;
+            });
             
             // The method should catch IOException and not throw
             assertDoesNotThrow(() -> {
                 fileStorageService.deleteFile("/uploads/images/test-file.jpg");
             });
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            fail("Failed to access uploadPath field: " + e.getMessage());
         }
     }
 
@@ -179,6 +211,44 @@ class FileStorageServiceTests {
         // Verify directory exists (it should be created by constructor)
         Path testDir = Paths.get(TEST_UPLOAD_DIR).toAbsolutePath().normalize();
         assertTrue(java.nio.file.Files.exists(testDir));
+    }
+
+    @Test
+    @DisplayName("FileStorageService constructor dengan direktori sudah ada tidak membuat ulang")
+    void constructor_WithExistingDirectory_ShouldNotCreateAgain() throws IOException {
+        // Use a unique test directory that we'll create first
+        String uniqueTestDir = "./test-uploads-existing-" + System.currentTimeMillis() + "/images";
+        Path uploadDir = Paths.get(uniqueTestDir).toAbsolutePath().normalize();
+        
+        // Create directory first to test the branch where Files.exists returns true
+        Files.createDirectories(uploadDir);
+        assertTrue(Files.exists(uploadDir), "Directory should exist before constructor call");
+        
+        // Now create a new instance - this should NOT call Files.createDirectories
+        // because directory already exists (Files.exists returns true)
+        // The constructor should skip the createDirectories call
+        FileStorageService newService = new FileStorageService(uniqueTestDir);
+        assertNotNull(newService);
+        
+        // Verify directory still exists (wasn't deleted or recreated)
+        assertTrue(Files.exists(uploadDir), "Directory should still exist after constructor");
+        
+        // Cleanup
+        try {
+            if (Files.exists(uploadDir)) {
+                Files.walk(uploadDir)
+                    .sorted((a, b) -> b.compareTo(a))
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            // Ignore cleanup errors
+                        }
+                    });
+            }
+        } catch (IOException e) {
+            // Ignore cleanup errors
+        }
     }
 
     @Test
@@ -236,15 +306,35 @@ class FileStorageServiceTests {
             Path absolutePath = mock(Path.class);
             
             // Mock Paths.get to return our mocked Path
-            mockedPaths.when(() -> Paths.get(TEST_UPLOAD_DIR)).thenReturn(uploadPath);
+            mockedPaths.when(() -> Paths.get(anyString())).thenAnswer(invocation -> {
+                String dir = invocation.getArgument(0);
+                if (dir.equals(TEST_UPLOAD_DIR)) {
+                    return uploadPath;
+                }
+                return Paths.get(dir); // Fallback to real Paths.get for other directories
+            });
+            
             // Mock toAbsolutePath and normalize
             when(uploadPath.toAbsolutePath()).thenReturn(absolutePath);
             when(absolutePath.normalize()).thenReturn(absolutePath);
             
             // Mock Files.exists to return false (directory doesn't exist)
-            mockedFiles.when(() -> Files.exists(absolutePath)).thenReturn(false);
+            mockedFiles.when(() -> Files.exists(any(Path.class))).thenAnswer(invocation -> {
+                Path path = invocation.getArgument(0);
+                if (path.equals(absolutePath)) {
+                    return false; // Directory doesn't exist
+                }
+                return Files.exists(path); // Fallback to real Files.exists for other paths
+            });
+            
             // Mock Files.createDirectories to throw IOException
-            mockedFiles.when(() -> Files.createDirectories(absolutePath)).thenThrow(new IOException("Cannot create directory"));
+            mockedFiles.when(() -> Files.createDirectories(any(Path.class))).thenAnswer(invocation -> {
+                Path path = invocation.getArgument(0);
+                if (path.equals(absolutePath)) {
+                    throw new IOException("Cannot create directory");
+                }
+                return Files.createDirectories(path); // Fallback to real Files.createDirectories for other paths
+            });
             
             // Constructor should throw RuntimeException when IOException occurs
             RuntimeException exception = assertThrows(RuntimeException.class, () -> {

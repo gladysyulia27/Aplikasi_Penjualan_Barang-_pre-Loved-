@@ -292,6 +292,29 @@ class ProductControllerTests {
     }
 
     @Test
+    @DisplayName("Add product dengan image empty tidak menyimpan image")
+    void addProduct_WithEmptyImage_ShouldReturnSuccessWithoutImage() {
+        String token = "valid-token";
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        Product product = new Product();
+        product.setId(UUID.randomUUID());
+        MultipartFile emptyImage = mock(MultipartFile.class);
+
+        when(authService.getUserByToken(token)).thenReturn(Optional.of(user));
+        when(emptyImage.isEmpty()).thenReturn(true);
+        when(productService.createProduct(any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(product);
+
+        ApiResponse<Product> result = productController.addProduct(token, "Name", "Desc",
+            new BigDecimal("100000"), "Category", "New", emptyImage);
+
+        assertEquals("success", result.getStatus());
+        verify(fileStorageService, never()).storeFile(any());
+        verify(productService, times(1)).createProduct(any(), any(), any(), any(), any(), any(), eq((String) null));
+    }
+
+    @Test
     @DisplayName("Add product dengan image berhasil")
     void addProduct_WithImage_ShouldReturnSuccess() {
         String token = "valid-token";
@@ -423,6 +446,34 @@ class ProductControllerTests {
         assertEquals("success", result.getStatus());
         verify(fileStorageService, times(1)).deleteFile("/uploads/old.jpg");
         verify(fileStorageService, times(1)).storeFile(image);
+    }
+
+    @Test
+    @DisplayName("Update product dengan image empty tidak menyimpan image")
+    void updateProduct_WithEmptyImage_ShouldReturnSuccessWithoutImage() {
+        UUID productId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        String token = "valid-token";
+        User user = new User();
+        user.setId(userId);
+        Product product = new Product();
+        product.setId(productId);
+        product.setUserId(userId);
+        MultipartFile emptyImage = mock(MultipartFile.class);
+
+        when(authService.getUserByToken(token)).thenReturn(Optional.of(user));
+        when(emptyImage.isEmpty()).thenReturn(true);
+        when(productService.getProductById(productId)).thenReturn(Optional.of(product));
+        when(productService.updateProduct(any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(product);
+
+        ApiResponse<Product> result = productController.updateProduct(productId, token,
+            "Name", "Desc", new BigDecimal("100000"), "Category", "New", emptyImage);
+
+        assertEquals("success", result.getStatus());
+        verify(fileStorageService, never()).storeFile(any());
+        verify(fileStorageService, never()).deleteFile(any());
+        verify(productService, times(1)).updateProduct(any(), any(), any(), any(), any(), any(), any(), eq((String) null));
     }
 
     @Test

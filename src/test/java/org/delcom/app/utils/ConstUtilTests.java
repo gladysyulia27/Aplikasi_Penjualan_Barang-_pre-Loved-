@@ -28,5 +28,13 @@ class ConstUtilTests {
         assertEquals("pages/products/add", ConstUtil.TEMPLATE_PAGES_PRODUCTS_ADD);
         assertEquals("pages/products/edit", ConstUtil.TEMPLATE_PAGES_PRODUCTS_EDIT);
     }
+
+    @Test
+    @DisplayName("ConstUtil constructor dapat dipanggil")
+    void constUtil_Constructor_ShouldBeCallable() {
+        // Test default constructor untuk coverage
+        ConstUtil constUtil = new ConstUtil();
+        assertNotNull(constUtil);
+    }
 }
 

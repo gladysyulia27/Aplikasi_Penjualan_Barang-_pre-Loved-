@@ -176,6 +176,17 @@ class AuthServiceTests {
     }
 
     @Test
+    @DisplayName("Get user by ID dengan user tidak ditemukan mengembalikan empty")
+    void getUserById_WithUserNotFound_ShouldReturnEmpty() {
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        Optional<User> result = authService.getUserById(userId);
+
+        assertFalse(result.isPresent());
+    }
+
+    @Test
     @DisplayName("Login dengan existing token menghapus token lama")
     void login_WithExistingToken_ShouldDeleteOldToken() {
         String email = "test@example.com";
@@ -222,6 +233,27 @@ class AuthServiceTests {
         Optional<User> result = authService.getUserByToken(token);
 
         assertFalse(result.isPresent());
+    }
+
+    @Test
+    @DisplayName("Get user by token dengan extractUserId mengembalikan null mengembalikan empty")
+    void getUserByToken_WithExtractUserIdReturnsNull_ShouldReturnEmpty() {
+        // Create a token with invalid subject format that will pass validateToken
+        // but extractUserId will return null because subject is not a valid UUID
+        String tokenWithInvalidSubject = io.jsonwebtoken.Jwts.builder()
+                .subject("invalid-uuid-format") // Not a valid UUID
+                .issuedAt(new java.util.Date())
+                .expiration(new java.util.Date(System.currentTimeMillis() + 3600000))
+                .signWith(org.delcom.app.utils.JwtUtil.getKey())
+                .compact();
+
+        // validateToken will return true (token is valid JWT)
+        // but extractUserId will return null (subject is not UUID format)
+        Optional<User> result = authService.getUserByToken(tokenWithInvalidSubject);
+
+        assertFalse(result.isPresent());
+        // Should not call userRepository because extractUserId returns null
+        verify(userRepository, never()).findById(any());
     }
 }
 
