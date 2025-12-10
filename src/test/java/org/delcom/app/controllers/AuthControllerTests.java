@@ -11,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.ui.Model;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -69,8 +70,23 @@ class AuthControllerTests {
     @Test
     @DisplayName("Show login form mengembalikan view name")
     void showLoginForm_ShouldReturnViewName() {
-        String result = authController.showLoginForm();
+        Model model = mock(Model.class);
+        String result = authController.showLoginForm(null, null, model);
         assertEquals("auth/login", result);
+    }
+
+    @Test
+    @DisplayName("Show login form dengan user sudah login redirect ke home")
+    void showLoginForm_WithLoggedInUser_ShouldRedirect() {
+        Model model = mock(Model.class);
+        User user = new User();
+        user.setId(UUID.randomUUID());
+        user.setEmail("test@example.com");
+        
+        when(authService.getUserByToken("valid-token")).thenReturn(Optional.of(user));
+        
+        String result = authController.showLoginForm(null, "valid-token", model);
+        assertEquals("redirect:/", result);
     }
 
     @Test
@@ -80,7 +96,7 @@ class AuthControllerTests {
         authToken.setToken("test-token");
         when(authService.login("test@example.com", "password123")).thenReturn(authToken);
 
-        ApiResponse<String> result = authController.login("test@example.com", "password123", response);
+        ApiResponse<String> result = authController.login("test@example.com", "password123", null, response);
 
         assertEquals("success", result.getStatus());
         verify(response, times(1)).addCookie(any(Cookie.class));
@@ -92,7 +108,7 @@ class AuthControllerTests {
         when(authService.login(any(), any()))
             .thenThrow(new RuntimeException("Email atau password salah"));
 
-        ApiResponse<String> result = authController.login("test@example.com", "wrong", response);
+        ApiResponse<String> result = authController.login("test@example.com", "wrong", null, response);
 
         assertEquals("error", result.getStatus());
     }

@@ -1,59 +1,112 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout/base :: layout(~{::head}, ~{::content}, ~{::scripts})}">
-<head th:fragment="head">
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Aplikasi Penjualan Barang Pre-Loved</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
+    <style>
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+        }
+        .login-container {
+            width: 100%;
+            max-width: 450px;
+        }
+    </style>
 </head>
 <body>
-    <th:block th:fragment="content">
-        <div class="row justify-content-center">
-            <div class="col-md-5">
-                <div class="card shadow">
-                    <div class="card-body p-5">
-                        <h2 class="card-title text-center mb-4 text-primary">
-                            <i class="bi bi-box-arrow-in-right"></i> Login
-                        </h2>
-                        <form id="loginForm">
-                            <div class="mb-3">
-                                <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <input type="password" class="form-control" id="password" name="password" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary w-100 mb-3">
-                                <i class="bi bi-box-arrow-in-right"></i> Login
-                            </button>
-                        </form>
-                        <div class="text-center">
-                            <p>Belum punya akun? <a th:href="@{/auth/register}" class="text-primary">Daftar di sini</a></p>
-                        </div>
-                        <div id="alertMessage"></div>
+    <div class="login-container">
+        <div class="card shadow-lg">
+            <div class="card-body p-5">
+                <h2 class="card-title text-center mb-4 text-primary">
+                    <i class="bi bi-box-arrow-in-right"></i> Login
+                </h2>
+                <form id="loginForm">
+                    <input type="hidden" id="redirectUrl" name="redirect" th:value="${redirectUrl}">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
                     </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </button>
+                </form>
+                <div class="text-center">
+                    <p>Belum punya akun? <a th:href="@{/auth/register}" class="text-primary">Daftar di sini</a></p>
                 </div>
+                <div id="alertMessage"></div>
             </div>
         </div>
-    </th:block>
-    <th:block th:fragment="scripts">
-        <script>
-            document.getElementById('loginForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const formData = new FormData(this);
-                const response = await fetch('/auth/login', {
-                    method: 'POST',
-                    body: formData
-                });
-                const result = await response.json();
-                const alertDiv = document.getElementById('alertMessage');
-                if (result.status === 'success') {
-                    alertDiv.innerHTML = '<div class="alert alert-success">Login berhasil! Mengalihkan...</div>';
-                    setTimeout(() => window.location.href = '/', 1000);
-                } else {
-                    alertDiv.innerHTML = '<div class="alert alert-danger">' + result.message + '</div>';
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            // Get redirect URL from query parameter or hidden input
+            const urlParams = new URLSearchParams(window.location.search);
+            let redirectUrl = urlParams.get('redirect') || document.getElementById('redirectUrl').value || '/';
+            
+            // Decode URL jika sudah di-encode
+            try {
+                if (redirectUrl && redirectUrl !== '/' && redirectUrl !== '') {
+                    redirectUrl = decodeURIComponent(redirectUrl);
                 }
+            } catch (e) {
+                // Jika decode gagal, reset ke root
+                redirectUrl = '/';
+            }
+            
+            // Validasi dan sanitize redirect URL
+            if (redirectUrl && redirectUrl !== '' && redirectUrl !== '/' && 
+                redirectUrl.startsWith('/') && !redirectUrl.includes('//') && !redirectUrl.includes('..')) {
+                formData.append('redirect', redirectUrl);
+            } else {
+                // Jangan kirim redirect param jika root atau invalid
+                // formData tidak perlu append redirect jika root
+            }
+            
+            const response = await fetch('/auth/login', {
+                method: 'POST',
+                body: formData,
+                credentials: 'include'
             });
-        </script>
-    </th:block>
+            const result = await response.json();
+            const alertDiv = document.getElementById('alertMessage');
+            if (result.status === 'success') {
+                alertDiv.innerHTML = '<div class="alert alert-success">Login berhasil! Mengalihkan...</div>';
+                // Redirect ke URL yang diminta atau home
+                let redirectTo = '/';
+                if (result.data && result.data !== '' && result.data !== 'null' && result.data !== '/') {
+                    redirectTo = result.data;
+                    // Pastikan URL valid
+                    if (!redirectTo.startsWith('/')) {
+                        redirectTo = '/' + redirectTo;
+                    }
+                    // Pastikan tidak ada double slash atau karakter berbahaya
+                    if (redirectTo.includes('//') || redirectTo.includes('..')) {
+                        redirectTo = '/';
+                    }
+                }
+                setTimeout(() => window.location.href = redirectTo, 1000);
+            } else {
+                alertDiv.innerHTML = '<div class="alert alert-danger">' + result.message + '</div>';
+            }
+        });
+    </script>
 </body>
 </html>
 

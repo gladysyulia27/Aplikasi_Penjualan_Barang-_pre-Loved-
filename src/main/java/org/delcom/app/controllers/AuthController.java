@@ -11,6 +11,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @Controller
 @RequestMapping("/auth")
 public class AuthController {
@@ -39,7 +41,39 @@ public class AuthController {
     }
 
     @GetMapping("/login")
-    public String showLoginForm() {
+    public String showLoginForm(@RequestParam(value = "redirect", required = false) String redirect,
+                               @CookieValue(value = "token", required = false) String token,
+                               Model model) {
+        // Jika sudah login, redirect ke home atau URL yang diminta
+        if (token != null) {
+            Optional<User> userOpt = authService.getUserByToken(token);
+            if (userOpt.isPresent()) {
+                String redirectUrl = "/";
+                if (redirect != null && !redirect.isEmpty() && !redirect.equals("/")) {
+                    try {
+                        // Decode URL jika sudah di-encode
+                        String decoded = java.net.URLDecoder.decode(redirect, "UTF-8");
+                        // Validasi URL - harus dimulai dengan / dan tidak mengandung karakter berbahaya
+                        if (decoded.startsWith("/") && !decoded.contains("//") && !decoded.contains("..")) {
+                            redirectUrl = decoded;
+                        }
+                    } catch (Exception e) {
+                        redirectUrl = "/";
+                    }
+                }
+                return "redirect:" + redirectUrl;
+            }
+        }
+        
+        // Decode redirect URL untuk ditampilkan di form
+        if (redirect != null && !redirect.isEmpty()) {
+            try {
+                String decodedRedirect = java.net.URLDecoder.decode(redirect, "UTF-8");
+                model.addAttribute("redirectUrl", decodedRedirect);
+            } catch (Exception e) {
+                model.addAttribute("redirectUrl", redirect);
+            }
+        }
         return "auth/login";
     }
 
@@ -47,6 +81,7 @@ public class AuthController {
     @ResponseBody
     public ApiResponse<String> login(@RequestParam String email,
                                      @RequestParam String password,
+                                     @RequestParam(value = "redirect", required = false) String redirectUrl,
                                      HttpServletResponse response) {
         try {
             AuthToken authToken = authService.login(email, password);
@@ -55,7 +90,22 @@ public class AuthController {
             cookie.setPath("/");
             cookie.setMaxAge(86400); // 24 hours
             response.addCookie(cookie);
-            return new ApiResponse<>("success", "Login berhasil", authToken.getToken());
+            
+            // Return redirect URL jika ada, dengan validasi
+            String redirect = "/";
+            if (redirectUrl != null && !redirectUrl.isEmpty() && !redirectUrl.equals("null") && !redirectUrl.equals("/")) {
+                try {
+                    // Decode URL jika sudah di-encode
+                    String decoded = java.net.URLDecoder.decode(redirectUrl, "UTF-8");
+                    // Validasi URL - harus dimulai dengan / dan tidak mengandung karakter berbahaya
+                    if (decoded.startsWith("/") && !decoded.contains("//") && !decoded.contains("..")) {
+                        redirect = decoded;
+                    }
+                } catch (Exception e) {
+                    redirect = "/";
+                }
+            }
+            return new ApiResponse<>("success", "Login berhasil", redirect);
         } catch (Exception e) {
             return new ApiResponse<>("error", e.getMessage(), null);
         }

@@ -24,13 +24,13 @@ public class HomeController {
     @GetMapping("/")
     public String home(@CookieValue(value = "token", required = false) String token,
                       Model model) {
-        model.addAttribute("products", productService.getAllProducts());
-        
+        // Token sudah divalidasi oleh WebAuthInterceptor, jadi pasti valid
         if (token != null) {
             Optional<User> userOpt = authService.getUserByToken(token);
             userOpt.ifPresent(user -> model.addAttribute("currentUser", user));
         }
         
+        model.addAttribute("products", productService.getAllProducts());
         return "index";
     }
 }

@@ -8,8 +8,14 @@
         <div class="hero-section text-white p-5 rounded mb-4">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1 class="display-4 fw-bold mb-3">Selamat Datang di Pre-Loved Shop</h1>
-                    <p class="lead mb-4">Temukan barang pre-loved berkualitas dengan harga terjangkau. Jual dan beli dengan mudah!</p>
+                    <th:block th:if="${currentUser != null}">
+                        <h1 class="display-4 fw-bold mb-3">Hello, <span th:text="${currentUser.name}">User</span></h1>
+                        <p class="lead mb-4">Selamat datang di website pre-loved gladys! Mau belanja apa hari ini?</p>
+                    </th:block>
+                    <th:block th:if="${currentUser == null}">
+                        <h1 class="display-4 fw-bold mb-3">Selamat Datang di Pre-Loved Shop</h1>
+                        <p class="lead mb-4">Temukan barang pre-loved berkualitas dengan harga terjangkau. Jual dan beli dengan mudah!</p>
+                    </th:block>
                     <a th:href="@{/products}" class="btn btn-light btn-lg">
                         <i class="bi bi-search"></i> Jelajahi Produk
                     </a>
